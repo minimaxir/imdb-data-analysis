@@ -1,0 +1,186 @@
+---
+title: "Analyzing IMDb Data The Intended Way, with R and ggplot2"
+author: "Max Woolf (@minimaxir)"
+date: "2018-07-04"
+output:
+  html_notebook:
+    highlight: tango
+    mathjax: null
+    number_sections: yes
+    theme: spacelab
+    toc: True
+---
+
+
+**Information courtesy of
+IMDb
+(http://www.imdb.com).
+Used with permission.**
+
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(gghighlight)
+library(ggridges)
+library(tidytext)
+library(scales)
+
+sessionInfo()
+```
+
+# Ratings
+
+```{r}
+read_imdb <- function(data_path) {
+  path <- "/Volumes/Extreme 510/Data/imdb/"
+  read_tsv(paste0(path, data_path), na = "\\N", progress=F)
+}
+
+df_ratings <- read_imdb("title.ratings.tsv")
+df_ratings %>% head()
+```
+
+```{r}
+plot <- ggplot(df_ratings, aes(x = numVotes, y = averageRating)) +
+          geom_bin2d() +
+          scale_x_log10(labels = comma) +
+          scale_y_continuous(breaks = 0:10) +
+          scale_fill_viridis_c(option = "inferno")
+
+ggsave("imdb-1.png", plot, width=4, height=3)
+```
+
+![](imdb-1.png)
+
+# Title Basics
+
+```{r}
+df_basics <- read_imdb("title.basics.tsv")
+```
+
+```{r}
+df_basics %>% head()
+```
+
+```{r}
+df_ratings <- df_ratings %>% left_join(df_basics)
+
+df_ratings %>% head()
+```
+
+```{r}
+plot <- ggplot(df_ratings %>% filter(runtimeMinutes < 180, runtimeMinutes > 20), aes(x = runtimeMinutes, y = averageRating)) +
+          geom_bin2d() +
+          scale_x_continuous(breaks = seq(0, 180, 60), labels = 0:3) +
+          scale_y_continuous(breaks = 0:10) +
+          scale_fill_viridis_c(option = "inferno", labels = comma) +
+          theme_minimal(base_family = "Source Sans Pro", base_size=9) +
+          labs(title="Relationship between Movie Runtime and Average Mobie Rating",
+               subtitle="Data from IMDb retrieved July 4th, 2018",
+               x="Runtime (Hours)",
+               y="Average User Rating",
+               caption="Max Woolf — minimaxir.com",
+               fill="")
+
+ggsave("imdb-2.png", plot, width=6, height=3)
+```
+
+```{r}
+df_ratings_unnest <- df_ratings %>%
+                        select(runtimeMinutes, averageRating, genres) %>%
+                        unnest_tokens(genre, genres)
+
+df_ratings_unnest %>% head(10)
+```
+
+```{r}
+plot <- ggplot(df_ratings_unnest %>% filter(runtimeMinutes < 180, runtimeMinutes > 20), aes(x = runtimeMinutes, y = averageRating)) +
+          geom_bin2d() +
+          scale_x_continuous(breaks = seq(0, 180, 60), labels = 0:3) +
+          scale_y_continuous(breaks = 0:10) +
+          scale_fill_viridis_c(option = "inferno", labels = comma, trans='log10') +
+          theme_minimal(base_family = "Source Sans Pro", base_size=9) +
+          facet_wrap(~ genre) +
+          labs(title="Relationship between Movie Runtime and Average Mobie Rating",
+               subtitle="Data from IMDb retrieved July 4th, 2018",
+               x="Runtime (Hours)",
+               y="Average User Rating",
+               caption="Max Woolf — minimaxir.com",
+               fill="")
+
+ggsave("imdb-3.png", plot, width=6, height=6)
+```
+
+# Rating vs. Movie Year
+
+```{r}
+plot <- ggplot(df_ratings, aes(x = startYear, y = averageRating)) +
+          geom_bin2d() +
+          scale_x_continuous() +
+          scale_y_continuous(breaks = 0:10) +
+          scale_fill_viridis_c(option = "inferno", labels = comma, trans='log10') +
+          theme_minimal(base_family = "Source Sans Pro", base_size=9) +
+          labs(title="Relationship between Movie Runtime and Average Mobie Rating",
+               subtitle="Data from IMDb retrieved July 4th, 2018",
+               x="Year of Release",
+               y="Average User Rating",
+               caption="Max Woolf — minimaxir.com",
+               fill="")
+
+ggsave("imdb-4.png", plot, width=6, height=3)
+```
+
+```{r}
+# plot <- ggplot(df_ratings %>% filter(startYear >= 1950, !is.na(startYear)), aes(x = averageRating, y = startYear)) +
+#           geom_density_ridges()
+#           #theme_ridges() +
+#           scale_y_discrete() +
+#           #scale_y_continuous(breaks = 0:10) +
+#           #scale_fill_viridis_c(option = "inferno", labels = comma, trans='log10') +
+#           #theme_minimal(base_family = "Source Sans Pro", base_size=9) +
+#           # labs(title="Relationship between Movie Runtime and Average Mobie Rating",
+#           #      subtitle="Data from IMDb retrieved July 4th, 2018",
+#           #      x="Year of Release",
+#           #      y="Average User Rating",
+#           #      caption="Max Woolf — minimaxir.com",
+#           #      fill="")
+# 
+# ggsave("imdb-5.png", plot, width=6, height=3)
+```
+
+```{r}
+plot <- ggplot(df_ratings, aes(x = startYear, y = averageRating)) +
+          geom_bin2d() +
+          scale_x_continuous() +
+          scale_y_continuous(breaks = 0:10) +
+          scale_fill_viridis_c(option = "inferno", labels = comma, trans='log10') +
+          theme_minimal(base_family = "Source Sans Pro", base_size=9) +
+          labs(title="Relationship between Movie Runtime and Average Mobie Rating",
+               subtitle="Data from IMDb retrieved July 4th, 2018",
+               x="Year of Release",
+               y="Average User Rating",
+               caption="Max Woolf — minimaxir.com",
+               fill="")
+
+ggsave("imdb-4.png", plot, width=6, height=3)
+```
+
+
+```{r}
+# df_ratings <- df_ratings %>% mutate(decade = factor(cut_interval(startYear, 10, boundary=0), labels = seq(1950, 2010, 10)))
+# 
+# df_ratings %>% head()
+```
+
+```{r}
+df_episode <- read_imdb("title.episode.tsv") %>% filter(!is.na(seasonNumber))
+df_episode %>% head()
+```
+
+```{r}
+df_episode_count <- df_episode %>%
+                group_by(parentTcont, seasonNumber) %>%
+                tally()
+```
+

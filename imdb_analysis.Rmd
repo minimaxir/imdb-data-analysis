@@ -11,6 +11,8 @@ output:
     toc: True
 ---
 
+This R Notebook is the complement to my blog post [Analyzing IMDb Data The Intended Way, with R and ggplot2](http://minimaxir.com/2018/07/imdb-data-analysis/).
+
 This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
 
 IMDb data retrieved on July 4th 2018.
@@ -318,7 +320,7 @@ df_episode_count %>% head()
 ```{r}
 df_actors <- read_imdb("name.basics.tsv") %>%
                 filter(str_detect(primaryProfession, "actor|actress"))  %>%
-                select(nconst, primaryName,  birthYear)
+                select(nconst, primaryName, birthYear)
 
 df_actors %>% head()
 ```
@@ -480,7 +482,6 @@ df_ratings_movies_nth <- df_ratings_movies %>%
                       group_by(nconst) %>%
                       arrange(startYear) %>%
                       mutate(nth_lead = row_number()) %>%
-                      #filter(nth_lead <= 50) %>%
                       ungroup() %>%
                       arrange(desc(startYear), desc(numVotes))
 
